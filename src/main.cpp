@@ -86,6 +86,7 @@ void cb_ota(){
 void handleRoot() {
   bool power = digitalRead(D7);
   String msg = "";
+  ds.search();
   uint8_t num = ds.getNum();
   if (power == false){
 
