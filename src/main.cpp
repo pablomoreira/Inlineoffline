@@ -37,7 +37,7 @@ void setup() {
   WiFiManager wm;
       //wm.resetSettings();
 
-      
+
   bool res;
       // res = wm.autoConnect(); // auto generated AP name from chipid
       // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
@@ -46,9 +46,9 @@ void setup() {
   if(!res) {
     Serial.println("Failed to connect");
     ESP.restart();
-  } 
+  }
   else {
-    //if you get here you have connected to the WiFi    
+    //if you get here you have connected to the WiFi
     Serial.println("connected...yeey :)");
   }
   task_Wifi.enable();
@@ -86,11 +86,13 @@ void cb_ota(){
 void handleRoot() {
   bool power = digitalRead(D7);
   String msg = "";
+  uint8_t num = ds.getNum();
   if (power == false){
-    msg = "Power On Line";
+
+    msg = "Power On Line\n " + String(num);
   }
   else{
-    msg = "Power Off Line";
+    msg = "Power Off Line\n" + String(num);
   }
   server.send(200, "text/plain", msg);   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
@@ -99,7 +101,7 @@ void handleNotFound(){
   server.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
 }
 void cb_webserver(){
-  server.handleClient();  
+  server.handleClient();
 }
 
 void cb_led(){
