@@ -3,7 +3,8 @@
 Ds18b20::Ds18b20(uint8_t pin)
 {
   _pin = pin;
-  OneWire _ds(pin);
+  //OneWire _ds(_pin);
+  _ds.begin(pin);
   _num = 0;
   _index = 0;
   //pinMode(pin, OUTPUT);
