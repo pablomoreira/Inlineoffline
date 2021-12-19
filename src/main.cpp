@@ -87,13 +87,13 @@ void handleRoot() {
   bool power = digitalRead(D7);
   String msg = "";
   ds.search();
-  uint8_t num = ds.getNum();
-  if (power == false){
+  uint8_t n = ds.getNum();
 
-    msg = "Power On Line\n " + String(num);
+  if (power == false){
+    msg = "Power On Line";
   }
   else{
-    msg = "Power Off Line\n" + String(num);
+    msg = "Power Off Line Ns " + String(n);
   }
   server.send(200, "text/plain", msg);   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
