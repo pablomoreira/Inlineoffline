@@ -90,10 +90,10 @@ void handleRoot() {
   uint8_t n = ds.getNum();
 
   if (power == false){
-    msg = "Power On Line";
+    msg = "Power On Line " + String(n) + "\n" + String(ds.addr2str());
   }
   else{
-    msg = "Power Off Line Ns " + String(n);
+    msg = "Power Off Line Ns " + String(n) + "\n" + String(ds.addr2str());
   }
   server.send(200, "text/plain", msg);   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
