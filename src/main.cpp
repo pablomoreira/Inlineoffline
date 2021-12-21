@@ -9,6 +9,7 @@
 #include <ESP8266WebServer.h>
 #include "digital.h"
 #include "ds18b20.hpp"
+#include "config.h"
 
 void cb_wifi();
 void cb_ota();
@@ -21,11 +22,9 @@ Scheduler runner;
 Task task_Wifi(TASK_SECOND * 5, TASK_FOREVER, &cb_wifi, &runner);
 Task task_Ota(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_ota, &runner);
 Task task_led(TASK_MILLISECOND * 200, TASK_FOREVER, &cb_led, &runner);
-
-
 Task task_WebServer(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_webserver, &runner);
 
-ESP8266WebServer server(80);
+ESP8266WebServer server(HTTP_PORT);
 void handleRoot();              // function prototypes for HTTP handlers
 void handleNotFound();
 
@@ -41,7 +40,7 @@ void setup() {
   bool res;
       // res = wm.autoConnect(); // auto generated AP name from chipid
       // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
-  res = wm.autoConnect("Jost.Sensor","Sensor.Jost"); // password protected ap
+  res = wm.autoConnect(SSID,PASSWRD); // password protected ap
 
   if(!res) {
     Serial.println("Failed to connect");
@@ -53,7 +52,7 @@ void setup() {
   }
   task_Wifi.enable();
   task_led.enable();
-  led1.setblink(4);
+  led1.setblink(1);
 
   InitOTA();
   pinMode(D7,INPUT);
@@ -62,7 +61,7 @@ void setup() {
   server.onNotFound(handleNotFound);        // When a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
 
   server.begin();                           // Actually start the server
-  Serial.println("HTTP server started");
+  //Serial.println("HTTP server started");
 }
 
 

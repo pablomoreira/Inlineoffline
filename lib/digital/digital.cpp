@@ -10,20 +10,20 @@ Signal::Signal(uint8 pin,bool state)
 }
 void Signal::hight()
 {
-  
+
 }
 void Signal::low()
 {
     _state = LOW;
-    digitalWrite(_pin,LOW);  
+    digitalWrite(_pin,LOW);
 }
 void Signal::change(){
     _state = ! _state;
-    digitalWrite(_pin,_state);  
+    digitalWrite(_pin,_state);
 }
 void Signal::setblink(uint8 num){
-    if(_num != num){ 
-    _num = num;
+    if(_num != num){
+    _num = num * 2;
     _index = 0;
     low();
     }
@@ -34,5 +34,4 @@ void Signal::blink(){
        change();
    }
    _index++;
-   
 }

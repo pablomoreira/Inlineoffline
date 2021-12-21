@@ -20,6 +20,6 @@ class Ds18b20
         byte _addr[8];
         OneWire _ds;
         char _addr2str[17];
+        void __addr2str();
 };
-
 #endif
