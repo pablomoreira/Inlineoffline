@@ -1,3 +1,3 @@
-#define SSID "Jost.Sensor"
-#define PASSWRD "Sensor.Jost"
+#define SSID ""
+#define PASSWRD ""
 #define HTTP_PORT 80
