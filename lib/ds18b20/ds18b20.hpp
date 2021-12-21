@@ -11,6 +11,11 @@ class Ds18b20
         void search();
         uint8_t getNum();
         char* addr2str();
+        bool crc8();
+        float getTemp();
+        void update();
+        uint32 _mark_time;
+
     private:
         int _pin;
         boolean _state;
@@ -21,5 +26,7 @@ class Ds18b20
         OneWire _ds;
         char _addr2str[17];
         void __addr2str();
+        //uint32 _mark_time;
+        float temp;
 };
 #endif

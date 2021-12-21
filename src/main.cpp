@@ -15,7 +15,11 @@ void cb_wifi();
 void cb_ota();
 void cb_webserver();
 void cb_led();
+void cb_searchDs();
+void cb_checkTemp();
+
 Signal led1(D5, LOW);
+
 
 Scheduler runner;
 
@@ -23,6 +27,10 @@ Task task_Wifi(TASK_SECOND * 5, TASK_FOREVER, &cb_wifi, &runner);
 Task task_Ota(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_ota, &runner);
 Task task_led(TASK_MILLISECOND * 200, TASK_FOREVER, &cb_led, &runner);
 Task task_WebServer(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_webserver, &runner);
+
+Task task_checkTemp(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_checkTemp, &runner);
+Task task_searchDs(TASK_MILLISECOND * 250, TASK_FOREVER, &cb_searchDs, &runner);
+
 
 ESP8266WebServer server(HTTP_PORT);
 void handleRoot();              // function prototypes for HTTP handlers
@@ -52,6 +60,7 @@ void setup() {
   }
   task_Wifi.enable();
   task_led.enable();
+  task_searchDs.enable();
   led1.setblink(1);
 
   InitOTA();
@@ -85,15 +94,15 @@ void cb_ota(){
 void handleRoot() {
   bool power = digitalRead(D7);
   String msg = "";
-  ds.search();
-  uint8_t n = ds.getNum();
+  String info = "Index Sensor -> \n Address Sensor -> " + String(ds.addr2str()) + " " + String(ds.getTemp());
 
   if (power == false){
-    msg = "Power On Line " + String(n) + "\n" + String(ds.addr2str());
+    msg = "Power On Line";
   }
   else{
-    msg = "Power Off Line Ns " + String(n) + "\n" + String(ds.addr2str());
+    msg = "Power Off Line";
   }
+  msg += info;
   server.send(200, "text/plain", msg);   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
@@ -106,4 +115,26 @@ void cb_webserver(){
 
 void cb_led(){
     led1.blink();
+}
+
+void cb_searchDs() {
+  ds.search();
+  uint8_t n = ds.getNum();
+  if(n > 0 && ds.crc8()){
+    task_searchDs.disable();
+    task_checkTemp.enable();
+  }
+  else{
+    task_checkTemp.disable();
+    task_searchDs.enable();
+  }
+}
+
+void cb_checkTemp() {
+    if (millis() - ds._mark_time > DELAY_DS){
+      ds._mark_time = millis();
+      ds.update();
+      task_checkTemp.disable();
+      task_searchDs.enable();
+    }
 }
