@@ -2,6 +2,7 @@
 #define ds18b20_h
 #include <OneWire.h>
 #include <Arduino.h>
+#define DELAY_DS 750
 
 
 class Ds18b20
@@ -13,7 +14,7 @@ class Ds18b20
         char* addr2str();
         bool crc8();
         float getTemp();
-        void update();
+        bool update();
         uint32 _mark_time;
 
     private:

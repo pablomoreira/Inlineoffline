@@ -29,7 +29,7 @@ Task task_led(TASK_MILLISECOND * 200, TASK_FOREVER, &cb_led, &runner);
 Task task_WebServer(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_webserver, &runner);
 
 Task task_checkTemp(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_checkTemp, &runner);
-Task task_searchDs(TASK_MILLISECOND * 250, TASK_FOREVER, &cb_searchDs, &runner);
+Task task_searchDs(TASK_MILLISECOND * 50, TASK_FOREVER, &cb_searchDs, &runner);
 
 
 ESP8266WebServer server(HTTP_PORT);
@@ -94,8 +94,8 @@ void cb_ota(){
 void handleRoot() {
   bool power = digitalRead(D7);
   String msg = "";
-  String info = "Index Sensor -> \n Address Sensor -> " + String(ds.addr2str()) + " " + String(ds.getTemp());
-
+  String info = "\nIndex Sensor -> " + String(ds.getNum()) + " \n Address Sensor -> " + String(ds.addr2str()) + " " + String(ds.getTemp());
+  info = info + "\n" + String(millis() - ds._mark_time);
   if (power == false){
     msg = "Power On Line";
   }
@@ -131,10 +131,8 @@ void cb_searchDs() {
 }
 
 void cb_checkTemp() {
-    if (millis() - ds._mark_time > DELAY_DS){
-      ds._mark_time = millis();
-      ds.update();
-      task_checkTemp.disable();
-      task_searchDs.enable();
-    }
+  if (ds.update()){
+    task_checkTemp.disable();
+    task_searchDs.enable();
+  }
 }
