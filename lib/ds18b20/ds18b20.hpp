@@ -15,9 +15,9 @@ class Ds18b20
         bool crc8();
         float getTemp();
         bool update();
-        uint32 _mark_time;
-
+        uint32 getMark();
     private:
+
         int _pin;
         boolean _state;
         uint8 _num;
@@ -29,5 +29,7 @@ class Ds18b20
         void __addr2str();
         //uint32 _mark_time;
         float temp;
+        uint32 _mark_time;
+
 };
 #endif

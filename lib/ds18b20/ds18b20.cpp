@@ -91,3 +91,7 @@ bool Ds18b20::update(){
 float Ds18b20::getTemp(){
   return this->temp;
 }
+
+uint32_t Ds18b20::getMark(){
+ return  this->_mark_time;
+}
