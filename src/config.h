@@ -1,3 +1,4 @@
-#define SSID ""
-#define PASSWRD ""
+#define SSID "jost.sensor"
+#define PASSWRD "sensor.jost"
 #define HTTP_PORT 80
+#define PATH_RESET "/reset.cmd"

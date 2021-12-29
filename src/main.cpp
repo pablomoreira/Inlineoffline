@@ -7,6 +7,8 @@
 #include <ArduinoOTA.h>
 #include "OtaUtil.hpp"
 #include <ESP8266WebServer.h>
+#include <uri/UriBraces.h>
+#include <LittleFS.h>
 #include "digital.h"
 #include "ds18b20.hpp"
 #include "config.h"
@@ -38,19 +40,54 @@ void handleNotFound();
 void handleReboot();
 void handleReset();
 String prepareHtml();
+float handleSetTemp(String);
+
 Ds18b20 ds(D6);
 WiFiManager wm;
+float G_LIMIT_TEMP;
 
 void setup() {
-  WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
   Serial.begin(115200);
-      //wm.resetSettings();
+  delay(1000);
+  bool _reset = false;
+  Serial.printf("\n%s\n","--START--");
+  bool success = LittleFS.begin();
 
+  if (success) {
+    Serial.println("File system mounted with success");
+  } else {
+    Serial.println("Error mounting the file system");
+    return;
+  }
+
+  Dir dir = LittleFS.openDir("/");
+  //File file = LittleFS.open("/file.txt", "w");
+  //LittleFS.remove("/file.txt");
+  //file.close();
+
+  while (dir.next()) {
+    Serial.println(dir.fileName());
+    //str += dir.fileSize();
+    //str += "\r\n";
+  }
+  if (LittleFS.exists(PATH_RESET)) _reset = true;
+  LittleFS.end();
+
+  delay(2000);
+  WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
+      //wm.resetSettings();
+  Serial.println(WiFi.macAddress());
 
   bool res;
       // res = wm.autoConnect(); // auto generated AP name from chipid
       // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
   wm.setConfigPortalTimeout(300);
+  if(_reset == true )
+  {
+      Serial.printf("RESET MODE\n");
+      wm.resetSettings();
+  }
+
   res = wm.autoConnect(SSID,PASSWRD); // password protected ap
 
   if(!res) {
@@ -60,7 +97,11 @@ void setup() {
   else {
     //if you get here you have connected to the WiFi
     Serial.println("connected...yeey :)");
+    LittleFS.begin();
+    LittleFS.remove(PATH_RESET);
+    LittleFS.end();
   }
+
   task_Wifi.enable();
   task_led.enable();
   task_searchDs.enable();
@@ -72,6 +113,9 @@ void setup() {
   server.on("/", handleRoot);               // Call the 'handleRoot' function when a client requests URI "/"
   server.on("/reboot",handleReboot);
   server.on("/reset",handleReset);
+  server.on(UriBraces("/setTemp/{}"),[](){
+    handleSetTemp(server.pathArg(0));
+  });
   server.onNotFound(handleNotFound);        // When a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
 
   server.begin();                      // Actually start the server
@@ -84,14 +128,18 @@ void loop() {
 }
 
 void cb_wifi(){
-  if(WiFi.status() != WL_CONNECTION_LOST ){
+  //Serial.printf("%d\n", WiFi.status());
+
+  if(WiFi.status() == WL_CONNECTED ){
     if(!task_Ota.isEnabled()){
       task_Ota.enable();
     }
     if(!task_WebServer.isEnabled()){
       task_WebServer.enable();
     }
-    else{;}
+  }
+  else{
+    ESP.restart();
   }
 }
 
@@ -141,6 +189,8 @@ void cb_checkTemp() {
 }
 
 void handleReboot() {
+  server.sendHeader("Location", String("/"), true);
+  server.send ( 302, "text/plain", "");
   ESP.restart();
 }
 
@@ -149,35 +199,67 @@ String prepareHtml(){
   String power = "";
   String ttl;
   uint32_t diff = 0;
+  float _temp = 0;
+  String temp;
 
   if (digitalRead(D7) == false){
-    power = "POL_UP";
+    power = "ON [POL_ON]";
   }
   else{
-    power = "POL_DOWN";
+    power = "OFF [POL_OFF]";
   }
+
+  _temp = ds.getTemp();
+  if (_temp < G_LIMIT_TEMP){
+    temp = String(_temp) + "C [TEMP_OK]";
+  }else{
+    temp = String(_temp) + "C [TEMP_WARN]";
+  }
+
   diff = millis() - ds.getMark();
   ttl = String(diff);
   if(diff < 1000){
-      ttl += " TTL_OK";
+      ttl += " [TTL_OK]";
   }else{
-    ttl += " TTL_ERROR";
+    temp = String(_temp) + "C [TEMP_WARN]";
+    ttl += " [TTL_ERROR]";
   }
+
 
   htmlPage.reserve(1024);               // prevent ram fragmentation
   htmlPage = "<!DOCTYPE HTML>"
              "<html>"
-             "Power On Line -> " + power + "<br>";
+             "Power Line -> " + power + "<br>";
 
-  htmlPage +="Temperature -> " + String(ds.getTemp()) + "<br>";
+  htmlPage +="Temp " + String(G_LIMIT_TEMP) + " -> " + temp + "<br>";
   htmlPage +="TTL -> " + ttl + "<br>";
-  htmlPage +="Count -> " + String(ds.getNum());
+  //htmlPage +="Count -> " + String(ds.getNum());
 
 
              htmlPage += "</html>";
     return htmlPage;
 }
+
 void handleReset(){
-  //wm.resetSettings();
+  server.sendHeader("Location", String("/"), true);
+  server.send ( 302, "text/plain", "");
+  LittleFS.begin();
+  LittleFS.open(PATH_RESET, "w");
+  LittleFS.end();
+
   ESP.restart();
+}
+float handleSetTemp(String s_tempLimit){
+    float temp;
+    if (s_tempLimit.length() < 6){
+       temp = s_tempLimit.toFloat();
+      if(temp < 40 && temp > 10){
+        Serial.printf("%f\n",temp);
+        G_LIMIT_TEMP = temp;
+      }
+    }
+
+    server.sendHeader("Location", String("/"), true);
+    server.send ( 302, "text/plain", "");
+    return G_LIMIT_TEMP;
 }
