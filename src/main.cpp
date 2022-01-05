@@ -19,6 +19,8 @@ void cb_webserver();
 void cb_led();
 void cb_searchDs();
 void cb_checkTemp();
+void cb_prepareHtml();
+
 
 Signal led1(D5, LOW);
 
@@ -33,18 +35,19 @@ Task task_WebServer(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_webserver, &runner
 Task task_checkTemp(TASK_MILLISECOND * 100, TASK_FOREVER, &cb_checkTemp, &runner);
 Task task_searchDs(TASK_MILLISECOND * 50, TASK_FOREVER, &cb_searchDs, &runner);
 
+Task taskPrepare(TASK_SECOND, TASK_FOREVER, &cb_prepareHtml, &runner);
 
 ESP8266WebServer server(HTTP_PORT);
 void handleRoot();              // function prototypes for HTTP handlers
 void handleNotFound();
 void handleReboot();
 void handleReset();
+void handleSetTemp(String);
 String prepareHtml();
-float handleSetTemp(String);
+
 
 Ds18b20 ds(D6);
 WiFiManager wm;
-float G_LIMIT_TEMP;
 
 void setup() {
   Serial.begin(115200);
@@ -185,6 +188,9 @@ void cb_checkTemp() {
   if (ds.update()){
     task_checkTemp.disable();
     task_searchDs.enable();
+    if(!taskPrepare.isEnabled()){
+      taskPrepare.enable();
+    }
   }
 }
 
@@ -204,22 +210,27 @@ String prepareHtml(){
 
   if (digitalRead(D7) == false){
     power = "ON [POL_ON]";
+
   }
   else{
     power = "OFF [POL_OFF]";
+
   }
 
   _temp = ds.getTemp();
-  if (_temp < G_LIMIT_TEMP){
+  if (_temp < ds.getTempLimit()){
     temp = String(_temp) + "C [TEMP_OK]";
+
   }else{
     temp = String(_temp) + "C [TEMP_WARN]";
+
   }
 
   diff = millis() - ds.getMark();
   ttl = String(diff);
   if(diff < 1000){
       ttl += " [TTL_OK]";
+
   }else{
     temp = String(_temp) + "C [TEMP_WARN]";
     ttl += " [TTL_ERROR]";
@@ -229,37 +240,35 @@ String prepareHtml(){
   htmlPage.reserve(1024);               // prevent ram fragmentation
   htmlPage = "<!DOCTYPE HTML>"
              "<html>"
-             "Power Line -> " + power + "<br>";
+             "Power Line -> " + power + "<br>"
+             "Temp " + String(ds.getTempLimit()) + " -> " + temp + "<br>"
+             "TTL -> " + ttl + "<br>"
+             "</html>";
 
-  htmlPage +="Temp " + String(G_LIMIT_TEMP) + " -> " + temp + "<br>";
-  htmlPage +="TTL -> " + ttl + "<br>";
-  //htmlPage +="Count -> " + String(ds.getNum());
-
-
-             htmlPage += "</html>";
-    return htmlPage;
+  return htmlPage;
 }
 
 void handleReset(){
   server.sendHeader("Location", String("/"), true);
-  server.send ( 302, "text/plain", "");
+  server.send(302, "text/plain", "");
   LittleFS.begin();
   LittleFS.open(PATH_RESET, "w");
+  LittleFS.remove(PATH_TEMP);
   LittleFS.end();
+
 
   ESP.restart();
 }
-float handleSetTemp(String s_tempLimit){
-    float temp;
-    if (s_tempLimit.length() < 6){
-       temp = s_tempLimit.toFloat();
-      if(temp < 40 && temp > 10){
-        Serial.printf("%f\n",temp);
-        G_LIMIT_TEMP = temp;
-      }
-    }
-
+void handleSetTemp(String s_tempLimit){
+  if (ds.setTempLimit(s_tempLimit)){
     server.sendHeader("Location", String("/"), true);
     server.send ( 302, "text/plain", "");
-    return G_LIMIT_TEMP;
+  }
+  else{
+    server.send(404, "text/plain", "404: Out temp range");
+    }
+}
+
+void cb_prepareHtml(){
+  prepareHtml();
 }

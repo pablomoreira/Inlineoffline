@@ -2,6 +2,8 @@
 #define ds18b20_h
 #include <OneWire.h>
 #include <Arduino.h>
+#include <LittleFS.h>
+#include "../../src/config.h"
 #define DELAY_DS 750
 
 
@@ -16,10 +18,12 @@ class Ds18b20
         float getTemp();
         bool update();
         uint32 getMark();
+        bool setTempLimit(String);
+        float getTempLimit();
     private:
 
         int _pin;
-        boolean _state;
+        boolean isSetTempLimit;
         uint8 _num;
         uint8 _index;
         byte _data[12];
@@ -29,7 +33,9 @@ class Ds18b20
         void __addr2str();
         //uint32 _mark_time;
         float temp;
+        float tempLimit;
         uint32 _mark_time;
+
 
 };
 #endif

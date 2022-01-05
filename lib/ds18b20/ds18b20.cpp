@@ -1,5 +1,4 @@
 #include "ds18b20.hpp"
-#include <Arduino.h>
 
 Ds18b20::Ds18b20(uint8_t pin)
 {
@@ -8,6 +7,7 @@ Ds18b20::Ds18b20(uint8_t pin)
   _ds.begin(pin);
   _num = 0;
   _index = 0;
+  this->isSetTempLimit = false;
   //pinMode(pin, OUTPUT);
 }
 void Ds18b20::search(){
@@ -94,4 +94,55 @@ float Ds18b20::getTemp(){
 
 uint32_t Ds18b20::getMark(){
  return  this->_mark_time;
+}
+
+bool Ds18b20::setTempLimit(String s){
+  float temp;
+  char buf[7];
+  if (s.length() < 6){
+     temp = s.toFloat();
+     if(temp < 40 && temp > 10){
+        Serial.printf("%f\n",temp);
+        this->tempLimit = temp;
+        LittleFS.begin();
+        File f = LittleFS.open(PATH_TEMP, "w");
+        s.toCharArray(buf,7);
+        f.printf("%s\n",buf);
+        f.close();
+        LittleFS.end();
+        this->isSetTempLimit = true;
+        return true;
+    }
+  }
+  return false;
+}
+
+float Ds18b20::getTempLimit(){
+  String temp;
+  if(this->isSetTempLimit){
+    return this->tempLimit;
+  }
+  else{
+    LittleFS.begin();
+    if(LittleFS.exists(PATH_TEMP)){
+      File f = LittleFS.open(PATH_TEMP, "r");
+      temp = f.readString();
+      LittleFS.end();
+      this->isSetTempLimit = true;
+      this->tempLimit = temp.toFloat();
+      f.close();
+      LittleFS.end();
+    }
+    else{
+        LittleFS.begin();
+        File f = LittleFS.open(PATH_TEMP, "w");
+        f.printf("%s\n","23" );
+        f.close();
+        LittleFS.end();
+        this->tempLimit = temp.toFloat();
+    }
+  }
+
+  return this->tempLimit;
+
 }
