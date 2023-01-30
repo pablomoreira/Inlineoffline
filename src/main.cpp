@@ -10,7 +10,7 @@
 #include <uri/UriBraces.h>
 #include <LittleFS.h>
 #include "digital.h"
-#include "ds18b20.hpp"
+#include "ds18b20.h"
 #include "config.h"
 
 void cb_wifi();

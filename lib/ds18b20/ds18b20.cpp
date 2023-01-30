@@ -1,4 +1,4 @@
-#include "ds18b20.hpp"
+#include "ds18b20.h"
 
 Ds18b20::Ds18b20(uint8_t pin)
 {
